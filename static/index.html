@@ -1,0 +1,85 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>servermemo2</title>
+</head><body>
+<h1>servermemo2</h1>
+<textarea id=ta></textarea><br>
+<button id=btnsave>save on server</button>
+<button id=btnload>load from server</button>
+<hr>
+<button id=btnprikey>get prikey</button><br>
+<button id=btnprikey2>set prikey</button><br>
+<button id=btninit>init prikey</button>
+<hr>
+<a href=https://github.com/code4fukui/servermemo2/>src on GitHub</a><br>
+
+<script type="module">
+import * as sec from "https://code4fukui.github.io/sec.js/sec.js";
+import { Base64URL } from "https://code4fukui.github.io/Base64URL/Base64URL.js";
+import { fetchCBOR } from "https://js.sabae.cc/fetchCBOR.js";
+import { fetchBin } from "https://js.sabae.cc/fetchBin.js";
+
+const sprikey = localStorage.getItem("sprikey");
+let prikey = sprikey ? Base64URL.decode(sprikey) : sec.prikey();
+localStorage.setItem("sprikey", Base64URL.encode(prikey));
+let pubkey = sec.pubkey(prikey);
+
+const remotepubkey = Base64URL.decode("xsPBu65X8dscFjUIqECDjT1VcNHwa3GNx2PGkd6d-JA");
+console.log("remotepubkey", remotepubkey);
+
+const fn = "memo.txt";
+const endpoint = "/api/" + Base64URL.encode(remotepubkey);
+
+const putMemo = async () => {
+  const txt = ta.value;
+  const data = new TextEncoder().encode(txt);
+  const sharekey = sec.sharekey(prikey, remotepubkey);
+  const encrypt = sec.encrypt(sharekey, data);
+  const res = await fetchCBOR(endpoint + "/" + fn, {
+    userpubkey: pubkey,
+    data: encrypt,
+  });
+  console.log(res);
+};
+const getMemo = async () => {
+  const data = await fetchBin("data/" + Base64URL.encode(pubkey) + "/" + fn);
+  const txt = new TextDecoder().decode(data);
+  console.log(txt);
+  ta.value = txt;
+};
+
+btnprikey.onclick = () => {
+  prompt("prikey", Base64URL.encode(prikey));
+};
+btnprikey2.onclick = () => {
+  const prikey2 = prompt("prikey");
+  if (prikey2) {
+    prikey = Base64URL.decode(prikey2);
+    pubkey = sec.pubkey(prikey);
+    localStorage.setItem("sprikey", Base64URL.encode(prikey));
+  }
+};
+btninit.onclick = () => {
+  prikey = sec.prikey();
+  localStorage.setItem("sprikey", Base64URL.encode(prikey));
+  pubkey = sec.pubkey(prikey);
+  ta.value = "";
+};
+
+btnsave.onclick = async () => {
+  await putMemo();
+};
+btnload.onclick = async () => {
+  await getMemo();
+};
+</script>
+
+<style>
+textarea {
+  margin: 1em;
+  width: 90vw;
+  height: 15em;
+}
+a {
+  color: gray !important;
+}
+</style>
