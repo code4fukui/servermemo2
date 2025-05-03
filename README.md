@@ -18,4 +18,5 @@ upload files static/data/
 
 ## related
 
-[servermemo](https://github.com/code4fukui/servermemo)
+- [servermemo](https://github.com/code4fukui/servermemo)
+- [sec.js](https://github.com/code4fukui/sec.js/)
